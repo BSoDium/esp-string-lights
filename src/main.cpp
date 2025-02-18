@@ -1,89 +1,62 @@
-#include <Arduino.h>
-#if defined(ESP8266)
-#include <ESP8266WiFi.h>
-#elif defined(ESP32) || defined(ARDUINO_ARCH_RP2040)
 #include <WiFi.h>
-#endif
+#include <PubSubClient.h>
 
-#include "SinricPro.h"
-#include "SinricProSwitch.h"
+const char* ssid = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+const char* mqtt_server = "openhabian.local";
 
-#define WIFI_SSID "YOUR_WIFI_SSID"
-#define WIFI_PASS "YOUR_WIFI_PASSWORD"
-#define APP_KEY "6aa9e2f4-ffcf-421f-a70d-e1ecf4f42212"
-#define APP_SECRET "ab1c35e4-2e54-4c07-b051-c8a761579138-ef2885db-54e8-4b32-8464-29cd283101e3"
-#define SWITCH_ID "679aada6f25540068f8cad02"
+WiFiClient espClient;
+PubSubClient client(espClient);
 
-#if defined(ESP8266)
-#define RELAYPIN_1 12
-#elif defined(ESP32)
-#define RELAYPIN_1 16
-#elif (ARDUINO_ARCH_RP2040)
-#define RELAYPIN_1 6
-#endif
+const char* topic = "home/livingroom/light";
+const int ledPin = 2;  // Adjust based on your setup
 
-#define BAUD_RATE 115200 // Change baudrate to your need
-
-bool onPowerState1(const String &deviceId, bool &state)
-{
-  Serial.printf("Device 1 turned %s", state ? "on" : "off");
-  digitalWrite(RELAYPIN_1, state ? LOW : HIGH);
-
-  return true; // request handled properly
+void setup_wifi() {
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println("WiFi connected");
 }
 
-// setup function for WiFi connection
-void setupWiFi()
-{
-  Serial.printf("\r\n[Wifi]: Connecting");
+void callback(char* topic, byte* payload, unsigned int length) {
+    payload[length] = '\0';  // Ensure null termination
+    String message = String((char*)payload);
 
-#if defined(ESP8266)
-  WiFi.setSleepMode(WIFI_NONE_SLEEP);
-  WiFi.setAutoReconnect(true);
-#elif defined(ESP32)
-  WiFi.setSleep(false);
-  WiFi.setAutoReconnect(true);
-#endif
-
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    Serial.printf(".");
-    delay(250);
-  }
-
-  Serial.printf("connected!\r\n[WiFi]: IP-Address is %s\r\n", WiFi.localIP().toString().c_str());
+    if (message.equals("ON")) {
+        Serial.println("Turning light on");
+        digitalWrite(ledPin, HIGH);
+    } else if (message.equals("OFF")) {
+        Serial.println("Turning light off");
+        digitalWrite(ledPin, LOW);
+    }
 }
 
-// setup function for SinricPro
-void setupSinricPro()
-{
-  // add devices and callbacks to SinricPro
-  pinMode(RELAYPIN_1, OUTPUT);
-
-  SinricProSwitch &mySwitch1 = SinricPro[SWITCH_ID];
-  mySwitch1.onPowerState(onPowerState1);
-
-  // setup SinricPro
-  SinricPro.onConnected([]()
-                        { Serial.printf("Connected to SinricPro\r\n"); });
-  SinricPro.onDisconnected([]()
-                           { Serial.printf("Disconnected from SinricPro\r\n"); });
-
-  SinricPro.begin(APP_KEY, APP_SECRET);
+void reconnect() {
+    int attempts = 0;
+    while (!client.connected() && attempts < 10) {
+        if (client.connect("ESP32Light")) {
+            client.subscribe(topic);
+        } else {
+            delay(5000);
+            attempts++;
+        }
+    }
 }
 
-// main setup function
-void setup()
-{
-  Serial.begin(BAUD_RATE);
-  Serial.printf("\r\n\r\n");
-  setupWiFi();
-  setupSinricPro();
+void setup() {
+    Serial.begin(115200);
+    pinMode(ledPin, OUTPUT);
+    setup_wifi();
+    client.setServer(mqtt_server, 1883);
+    client.setCallback(callback);
+    Serial.println("Setup complete");
 }
 
-void loop()
-{
-  SinricPro.handle();
+void loop() {
+    if (!client.connected()) {
+        reconnect();
+    }
+    client.loop();
 }
