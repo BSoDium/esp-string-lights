@@ -29,6 +29,8 @@ graph LR
       C[Button] -->|Pin 2| A
       A -->|3.3V| C
       A -->|Pin 4 - Base| D[Transistor]
+      G[HI-Link power adapter] -->|3.3V| A
+      A -->|GND| G
     end
 
     subgraph Original board
@@ -37,9 +39,11 @@ graph LR
       E -->|GND| A
     end
 
-    F[220V AC power] -->|Phase| B
-    B -->|Phase| E
+    F[220V AC power] -->|220V Phase| B
+    B -->|220V Phase| E
     E -->|Neutral| F
+    F -->|220V Phase| G
+    G -->|Neutral| F
 ```
 
 ## Software Configuration
