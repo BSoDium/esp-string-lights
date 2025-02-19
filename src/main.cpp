@@ -68,15 +68,17 @@ void callback(char *topic, byte *payload, unsigned int length)
     else if (topicStr.equals(effectTopic))
     {
         std::string effectStr = message.c_str();
-        if (std::find(effects.begin(), effects.end(), effectStr) != effects.end())
+        if (std::find(effects.begin(), effects.end(), effectStr) != effects.end() && effectStr != effects[currentEffectIndex])
         {
             Serial.println("Loading effect: " + message);
             load_effect(effectStr);
             currentEffectIndex = std::find(effects.begin(), effects.end(), effectStr) - effects.begin();
         }
-        else
+        else if (effectStr != effects[currentEffectIndex])
         {
             Serial.println("Invalid effect received: " + message);
+        } else {
+            Serial.println("Effect already loaded: " + message);
         }
     }
 }
@@ -112,7 +114,7 @@ void setup()
     client.setServer(mqtt_server, 1883);
     client.setCallback(callback);
     client.publish(powerTopic, "ON", true);
-    
+
     Serial.println("Setup complete, MQTT client connected");
 }
 
