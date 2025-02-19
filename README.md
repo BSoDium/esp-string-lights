@@ -23,35 +23,45 @@ MQTT-enabled controller for string lights with multiple effects, designed for ES
 ```mermaid
 graph LR
     subgraph Controller board
-      A[ESP32] -->|Pin 16| B[Relay]
-      B -->|GND| A
-      A -->|3.3V| B
+      subgraph ESP32
+        H[Common GND] -->|GND| A[ESP32]
+        A -->|3.3V| I[Common 3.3V]
+      end
+
+      A -->|Pin 16| B[Relay]
+      B -->|GND| H
+      I -->|3.3V| B
       C[Button] -->|Pin 2| A
-      A -->|3.3V| C
+      I -->|3.3V| C
       A -->|Pin 4 - Base| D[Transistor]
-      G[HI-Link power adapter] -->|3.3V| A
-      A -->|GND| G
+      G[HI-Link power adapter] -->|3.3V| I
+      H -->|GND| G
     end
 
-    subgraph Original board
+    subgraph Original controller board
       D -->|GND - Emitter| E[String lights]
       E -->|≈ 3.3V - Collector| D
       E -->|GND| A
+
+      F[220V AC power] ==>|Live 220V| B
+      B ==>|Live 220V| E
+      E ==>|Neutral| F
+      F ==>|Live 220V| G
+      G ==>|Neutral| F
     end
 
-    F[220V AC power] ==>|220V Phase| B
-    B ==>|220V Phase| E
-    E ==>|Neutral| F
-    F ==>|220V Phase| G
-    G ==>|Neutral| F
-   
-    linkStyle 0 stroke: yellow
-    linkStyle 2 stroke: red
-    linkStyle 3 stroke: yellow
+    linkStyle 1 stroke: red
+    linkStyle 2 stroke: yellow
     linkStyle 4 stroke: red
     linkStyle 5 stroke: yellow
     linkStyle 6 stroke: red
-    linkStyle 9 stroke: red
+    linkStyle 7 stroke: yellow
+    linkStyle 11 stroke: red
+    linkStyle 13 stroke: #926243
+    linkStyle 14 stroke: #926243
+    linkStyle 15 stroke: #016FDE
+    linkStyle 16 stroke: #926243
+    linkStyle 17 stroke: #016FDE
 ```
 
 ## Software Configuration
