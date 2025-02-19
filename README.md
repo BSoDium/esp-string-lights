@@ -24,26 +24,26 @@ MQTT-enabled controller for string lights with multiple effects, designed for ES
 graph LR
     subgraph Controller board
       subgraph ESP32
-        H[Common GND] -->|GND| A[ESP32]
-        A -->|3.3V| I[Common 3.3V]
+        H([fa:fa-minus &nbsp;Common GND]) -->|GND| A[fa:fa-microchip &nbsp;ESP32]
+        A -->|3.3V| I([fa:fa-plus &nbsp;Common 3.3V])
       end
 
-      A -->|Pin 16| B[Relay]
+      A -->|Pin 16| B[fa:fa-toggle-off &nbsp;Relay]
       B -->|GND| H
       I -->|3.3V| B
-      C[Button] -->|Pin 2| A
+      C[fa:fa-circle-dot &nbsp;Button] -->|Pin 2| A
       I -->|3.3V| C
-      A -->|Pin 4 - Base| D[Transistor]
-      G[HI-Link power adapter] -->|3.3V| I
+      A -->|Pin 4 - Base| D[fa:fa-toggle-off &nbsp;Transistor]
+      G[fa:fa-bolt &nbsp;HI-Link power adapter] -->|3.3V| I
       H -->|GND| G
     end
 
     subgraph Original controller board
-      D -->|GND - Emitter| E[String lights]
+      D -->|GND - Emitter| E[fa:fa-lightbulb &nbsp;String lights]
       E -->|≈ 3.3V - Collector| D
       E -->|GND| A
 
-      F[220V AC power] ==>|Live 220V| B
+      F([fa:fa-plug &nbsp;220V AC power]) ==>|Live 220V| B
       B ==>|Live 220V| E
       E ==>|Neutral| F
       F ==>|Live 220V| G
