@@ -57,11 +57,11 @@ graph LR
     linkStyle 6 stroke: red
     linkStyle 7 stroke: yellow
     linkStyle 11 stroke: red
-    linkStyle 13 stroke: #926243
-    linkStyle 14 stroke: #926243
-    linkStyle 15 stroke: #016FDE
-    linkStyle 16 stroke: #926243
-    linkStyle 17 stroke: #016FDE
+    linkStyle 13 stroke: #926243, stroke-width:4px
+    linkStyle 14 stroke: #926243, stroke-width:4px
+    linkStyle 15 stroke: #016FDE, stroke-width:4px
+    linkStyle 16 stroke: #926243, stroke-width:4px
+    linkStyle 17 stroke: #016FDE, stroke-width:4px
 ```
 
 ## Software Configuration
