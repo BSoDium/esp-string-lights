@@ -2,10 +2,7 @@
 #include <PubSubClient.h>
 #include <vector>
 #include <algorithm>
-
-const char *ssid = "YOUR_WIFI_SSID";
-const char *password = "YOUR_WIFI_PASSWORD";
-const char *mqtt_server = "openhabian.local";
+#include "config.h"
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -22,6 +19,7 @@ int currentEffectIndex = 0;
 
 int lastButtonState = LOW;
 
+/** Setup WiFi connection */
 void setup_wifi()
 {
     WiFi.begin(ssid, password);
@@ -33,6 +31,7 @@ void setup_wifi()
     Serial.println("WiFi connected");
 }
 
+/** Load an effect by cycling through the effects */
 void load_effect(std::string effect)
 {
     const int effectIndex = std::find(effects.begin(), effects.end(), effect) - effects.begin();
@@ -46,6 +45,7 @@ void load_effect(std::string effect)
     }
 }
 
+/** Callback function for MQTT messages */
 void callback(char *topic, byte *payload, unsigned int length)
 {
     payload[length] = '\0'; // Ensure null termination
@@ -63,6 +63,7 @@ void callback(char *topic, byte *payload, unsigned int length)
         {
             Serial.println("Turning light off");
             digitalWrite(relayPin, HIGH);
+            currentEffectIndex = 0;
         }
     }
     else if (topicStr.equals(effectTopic))
@@ -83,6 +84,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     }
 }
 
+/** Reconnect to MQTT server */
 void reconnect()
 {
     int attempts = 0;
@@ -101,6 +103,7 @@ void reconnect()
     }
 }
 
+/** Setup function */
 void setup()
 {
     Serial.begin(115200);
@@ -113,13 +116,15 @@ void setup()
 
     client.setServer(mqtt_server, 1883);
     client.setCallback(callback);
-    client.publish(powerTopic, "ON", true);
+    client.publish(powerTopic, "ON", true); // Publish initial state
 
     Serial.println("Setup complete, MQTT client connected");
 }
 
+/** Main loop */
 void loop()
 {
+    // Reconnect if necessary
     if (!client.connected())
     {
         reconnect();
