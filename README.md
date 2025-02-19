@@ -100,6 +100,46 @@ graph LR
 - Send "ON"/"OFF" to power topic
 - Send effect name to effect topic
 
+## Flowchart
+
+```mermaid
+flowchart
+
+  subgraph Initialization
+    Start@{ shape: sm-circ, label: "Start" }
+    A[Connect to WiFi]
+    B[Connect to MQTT]
+    C[Subscribe to topics]
+  end
+
+
+  subgraph Main Loop
+    E{MQTT }
+    D{Button press}
+    F[Update effect]
+    G[Update power state]
+    H[Update lights]
+  end
+
+  Start --> A
+  A -->|Success| B
+  B -->|Success| C
+  C -->|Success| E
+
+  E -->|Effect message| F
+  F -->|Update effect| H
+  
+  E -->|Power message| G
+  G -->|Update power| H
+  E -->|Disconnected| B
+  E -->|No message| D
+  
+  D -->|Yes| F
+  D -->|No| E
+  
+  H -->|Success| D
+```
+
 ## Development
 
 Built using PlatformIO. Main components:
