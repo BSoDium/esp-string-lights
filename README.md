@@ -39,11 +39,19 @@ graph LR
       E -->|GND| A
     end
 
-    F[220V AC power] -->|220V Phase| B
-    B -->|220V Phase| E
-    E -->|Neutral| F
-    F -->|220V Phase| G
-    G -->|Neutral| F
+    F[220V AC power] ==>|220V Phase| B
+    B ==>|220V Phase| E
+    E ==>|Neutral| F
+    F ==>|220V Phase| G
+    G ==>|Neutral| F
+   
+    linkStyle 0 stroke: yellow
+    linkStyle 2 stroke: red
+    linkStyle 3 stroke: yellow
+    linkStyle 4 stroke: red
+    linkStyle 5 stroke: yellow
+    linkStyle 6 stroke: red
+    linkStyle 9 stroke: red
 ```
 
 ## Software Configuration
