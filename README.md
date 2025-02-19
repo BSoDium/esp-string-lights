@@ -20,12 +20,26 @@ MQTT-enabled controller for string lights with multiple effects, designed for ES
 
 ### Wiring Diagram
 
-```
-ESP32           Components
-Pin 16 -------- Relay Input
-Pin 2  -------- Push Button (other end to GND)
-Pin 4  -------- Transistor Base (through resistor)
-GND   -------- Common Ground
+```mermaid
+graph LR
+    subgraph Controller board
+      A[ESP32] -->|Pin 16| B[Relay]
+      B -->|GND| A
+      A -->|3.3V| B
+      C[Button] -->|Pin 2| A
+      A -->|3.3V| C
+      A -->|Pin 4 - Base| D[Transistor]
+    end
+
+    subgraph Original board
+      D -->|GND - Emitter| E[String lights]
+      E -->|≈ 3.3V - Collector| D
+      E -->|GND| A
+    end
+
+    F[220V AC power] -->|Phase| B
+    B -->|Phase| E
+    E -->|Neutral| F
 ```
 
 ## Software Configuration
