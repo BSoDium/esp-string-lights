@@ -11,7 +11,7 @@ const char *powerTopic = "home/livingroom/string-light";
 const char *effectTopic = "home/livingroom/string-light/effect";
 
 const int relayPin = 16;
-const int buttonPin = 2;
+const int ledAndButtonPin = 2;
 const int transistorBasePin = 4;
 
 bool currentPowerState = false;
@@ -37,14 +37,27 @@ void setup_wifi()
 void load_effect(std::string effect)
 {
     const int effectIndex = std::find(effects.begin(), effects.end(), effect) - effects.begin();
+    if (effectIndex == currentEffectIndex)
+    {
+        Serial.println("Effect already loaded: " + String(effect.c_str()));
+        return;
+    }
+
     const int circularIndexDelta = (effectIndex > currentEffectIndex) ? effectIndex - currentEffectIndex : effects.size() - currentEffectIndex + effectIndex;
+    Serial.println("Effect index: " + String(effectIndex) + ", current index: " + String(currentEffectIndex) + ", delta: " + String(circularIndexDelta));
+
+    pinMode(ledAndButtonPin, OUTPUT);
     for (int i = 0; i < circularIndexDelta; i++)
     {
         digitalWrite(transistorBasePin, HIGH);
+        digitalWrite(ledAndButtonPin, HIGH);
         delay(50);
         digitalWrite(transistorBasePin, LOW);
+        digitalWrite(ledAndButtonPin, LOW);
         delay(50);
     }
+    pinMode(ledAndButtonPin, INPUT_PULLUP);
+    Serial.println("Effect loaded: " + String(effect.c_str()));
 }
 
 /** Callback function for MQTT messages */
@@ -62,11 +75,16 @@ void callback(char *topic, byte *payload, unsigned int length)
             digitalWrite(relayPin, HIGH);
             currentPowerState = true;
 
+            delay(500);
+
             // If the effect has been changed while the light was off, load the new effect
             if (currentEffectIndex != 0)
             {
-                Serial.println("Loading effect: " + String(effects[currentEffectIndex].c_str()));
-                load_effect(effects[currentEffectIndex]);
+                const int targetEffectIndex = currentEffectIndex;
+                Serial.println("Loading effect: " + String(effects[targetEffectIndex].c_str()));
+                currentEffectIndex = 0;
+                load_effect(effects[targetEffectIndex]);
+                currentEffectIndex = targetEffectIndex;
             }
         }
         else if (message.equals("OFF"))
@@ -128,7 +146,7 @@ void setup()
     Serial.begin(115200);
 
     pinMode(relayPin, OUTPUT);
-    pinMode(buttonPin, INPUT_PULLUP);
+    pinMode(ledAndButtonPin, INPUT_PULLUP);
     pinMode(transistorBasePin, OUTPUT);
 
     setup_wifi();
@@ -150,14 +168,15 @@ void loop()
     client.loop();
 
     // Read button state and check for changes
-    int currentButtonState = digitalRead(buttonPin);
+    int currentButtonState = digitalRead(ledAndButtonPin);
     if (currentButtonState != lastButtonState)
     {
         if (currentButtonState == HIGH)
         {
             // Publish the new effect
             Serial.println("Button pressed, cycling effects");
-            client.publish(effectTopic, effects[(currentEffectIndex + 1) % effects.size()].c_str(), true);
+            const int targetEffectIndex = (currentEffectIndex + 1) % effects.size();
+            client.publish(effectTopic, effects[targetEffectIndex].c_str(), true);
         }
         lastButtonState = currentButtonState;
     }
