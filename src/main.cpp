@@ -7,7 +7,8 @@
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-const char *powerTopic = "home/livingroom/string-light";
+const char *availabilityTopic = "home/livingroom/string-light/availability";
+const char *powerTopic = "home/livingroom/string-light/power";
 const char *effectTopic = "home/livingroom/string-light/effect";
 
 const int relayPin = 16;
@@ -51,10 +52,10 @@ void load_effect(std::string effect)
     {
         digitalWrite(transistorBasePin, HIGH);
         digitalWrite(ledAndButtonPin, HIGH);
-        delay(50);
+        delay(75);
         digitalWrite(transistorBasePin, LOW);
         digitalWrite(ledAndButtonPin, LOW);
-        delay(50);
+        delay(25);
     }
     pinMode(ledAndButtonPin, INPUT_PULLUP);
     Serial.println("Effect loaded: " + String(effect.c_str()));
@@ -127,10 +128,12 @@ void reconnect()
     int attempts = 0;
     while (!client.connected() && attempts < 10)
     {
-        if (client.connect("ESP32-String-Lights"))
+        if (client.connect("ESP32-String-Lights", availabilityTopic, 0, true, "OFF"))
         {
             client.subscribe(powerTopic);
             client.subscribe(effectTopic);
+
+            client.publish(availabilityTopic, "ON", true);
         }
         else
         {
