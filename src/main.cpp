@@ -14,7 +14,9 @@ const int relayPin = 16;
 const int buttonPin = 2;
 const int transistorBasePin = 4;
 
-std::vector<std::string> effects = {"IN_WAVES", "SEQUENTIAL", "SLO_GLO", "CHASING", "FADE", "TWINKLE", "STATIC", "COMBINATION"};
+bool currentPowerState = false;
+
+std::vector<std::string> effects = {"COMBINATION", "IN_WAVES", "SEQUENTIAL", "SLO_GLO", "CHASING", "FADE", "TWINKLE", "STATIC"};
 int currentEffectIndex = 0;
 
 int lastButtonState = LOW;
@@ -35,8 +37,8 @@ void setup_wifi()
 void load_effect(std::string effect)
 {
     const int effectIndex = std::find(effects.begin(), effects.end(), effect) - effects.begin();
-    const int delta = (effectIndex > currentEffectIndex) ? effectIndex - currentEffectIndex : effects.size() - currentEffectIndex + effectIndex;
-    for (int i = 0; i < delta; i++)
+    const int circularIndexDelta = (effectIndex > currentEffectIndex) ? effectIndex - currentEffectIndex : effects.size() - currentEffectIndex + effectIndex;
+    for (int i = 0; i < circularIndexDelta; i++)
     {
         digitalWrite(transistorBasePin, HIGH);
         delay(50);
@@ -57,13 +59,21 @@ void callback(char *topic, byte *payload, unsigned int length)
         if (message.equals("ON"))
         {
             Serial.println("Turning light on");
-            digitalWrite(relayPin, LOW);
+            digitalWrite(relayPin, HIGH);
+            currentPowerState = true;
+
+            // If the effect has been changed while the light was off, load the new effect
+            if (currentEffectIndex != 0)
+            {
+                Serial.println("Loading effect: " + String(effects[currentEffectIndex].c_str()));
+                load_effect(effects[currentEffectIndex]);
+            }
         }
         else if (message.equals("OFF"))
         {
             Serial.println("Turning light off");
-            digitalWrite(relayPin, HIGH);
-            currentEffectIndex = 0;
+            digitalWrite(relayPin, LOW);
+            currentPowerState = false;
         }
     }
     else if (topicStr.equals(effectTopic))
@@ -71,14 +81,23 @@ void callback(char *topic, byte *payload, unsigned int length)
         std::string effectStr = message.c_str();
         if (std::find(effects.begin(), effects.end(), effectStr) != effects.end() && effectStr != effects[currentEffectIndex])
         {
-            Serial.println("Loading effect: " + message);
-            load_effect(effectStr);
+            if (currentPowerState)
+            {
+                Serial.println("Loading effect: " + message);
+                load_effect(effectStr);
+            }
+            else
+            {
+                Serial.println("Light is off, effect will be loaded when light is turned on");
+            }
             currentEffectIndex = std::find(effects.begin(), effects.end(), effectStr) - effects.begin();
         }
         else if (effectStr != effects[currentEffectIndex])
         {
             Serial.println("Invalid effect received: " + message);
-        } else {
+        }
+        else
+        {
             Serial.println("Effect already loaded: " + message);
         }
     }
@@ -90,7 +109,7 @@ void reconnect()
     int attempts = 0;
     while (!client.connected() && attempts < 10)
     {
-        if (client.connect("ESP32StringLight"))
+        if (client.connect("ESP32-String-Lights"))
         {
             client.subscribe(powerTopic);
             client.subscribe(effectTopic);
@@ -116,7 +135,6 @@ void setup()
 
     client.setServer(mqtt_server, 1883);
     client.setCallback(callback);
-    client.publish(powerTopic, "ON", true); // Publish initial state
 
     Serial.println("Setup complete, MQTT client connected");
 }
@@ -137,12 +155,10 @@ void loop()
     {
         if (currentButtonState == HIGH)
         {
-            // Cycle to next effect
-            currentEffectIndex = (currentEffectIndex + 1) % effects.size();
             // Publish the new effect
-            client.publish(effectTopic, effects[currentEffectIndex].c_str());
+            Serial.println("Button pressed, cycling effects");
+            client.publish(effectTopic, effects[(currentEffectIndex + 1) % effects.size()].c_str(), true);
         }
-        digitalWrite(transistorBasePin, currentButtonState);
         lastButtonState = currentButtonState;
     }
 }
