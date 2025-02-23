@@ -4,16 +4,16 @@
 #include <algorithm>
 #include "config.h"
 
+#define RELAY_PIN 16
+#define LED_AND_BUTTON_PIN 2
+#define TRANSISTOR_BASE_PIN 4
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 
 const char *availabilityTopic = "home/livingroom/string-light/availability";
 const char *powerTopic = "home/livingroom/string-light/power";
 const char *effectTopic = "home/livingroom/string-light/effect";
-
-const int relayPin = 16;
-const int ledAndButtonPin = 2;
-const int transistorBasePin = 4;
 
 bool currentPowerState = false;
 
@@ -47,17 +47,17 @@ void load_effect(std::string effect)
     const int circularIndexDelta = (effectIndex > currentEffectIndex) ? effectIndex - currentEffectIndex : effects.size() - currentEffectIndex + effectIndex;
     Serial.println("Effect index: " + String(effectIndex) + ", current index: " + String(currentEffectIndex) + ", delta: " + String(circularIndexDelta));
 
-    pinMode(ledAndButtonPin, OUTPUT);
+    pinMode(LED_AND_BUTTON_PIN, OUTPUT);
     for (int i = 0; i < circularIndexDelta; i++)
     {
-        digitalWrite(transistorBasePin, HIGH);
-        digitalWrite(ledAndButtonPin, HIGH);
+        digitalWrite(TRANSISTOR_BASE_PIN, HIGH);
+        digitalWrite(LED_AND_BUTTON_PIN, HIGH);
         delay(75);
-        digitalWrite(transistorBasePin, LOW);
-        digitalWrite(ledAndButtonPin, LOW);
+        digitalWrite(TRANSISTOR_BASE_PIN, LOW);
+        digitalWrite(LED_AND_BUTTON_PIN, LOW);
         delay(25);
     }
-    pinMode(ledAndButtonPin, INPUT_PULLUP);
+    pinMode(LED_AND_BUTTON_PIN, INPUT_PULLUP);
     Serial.println("Effect loaded: " + String(effect.c_str()));
 }
 
@@ -73,7 +73,7 @@ void callback(char *topic, byte *payload, unsigned int length)
         if (message.equals("ON"))
         {
             Serial.println("Turning light on");
-            digitalWrite(relayPin, HIGH);
+            digitalWrite(RELAY_PIN, HIGH);
             currentPowerState = true;
 
             delay(500);
@@ -91,7 +91,7 @@ void callback(char *topic, byte *payload, unsigned int length)
         else if (message.equals("OFF"))
         {
             Serial.println("Turning light off");
-            digitalWrite(relayPin, LOW);
+            digitalWrite(RELAY_PIN, LOW);
             currentPowerState = false;
         }
     }
@@ -148,9 +148,9 @@ void setup()
 {
     Serial.begin(115200);
 
-    pinMode(relayPin, OUTPUT);
-    pinMode(ledAndButtonPin, INPUT_PULLUP);
-    pinMode(transistorBasePin, OUTPUT);
+    pinMode(RELAY_PIN, OUTPUT);
+    pinMode(LED_AND_BUTTON_PIN, INPUT_PULLUP);
+    pinMode(TRANSISTOR_BASE_PIN, OUTPUT);
 
     setup_wifi();
 
@@ -171,7 +171,7 @@ void loop()
     client.loop();
 
     // Read button state and check for changes
-    int currentButtonState = digitalRead(ledAndButtonPin);
+    int currentButtonState = digitalRead(LED_AND_BUTTON_PIN);
     if (currentButtonState != lastButtonState)
     {
         if (currentButtonState == HIGH)
